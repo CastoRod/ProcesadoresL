@@ -1,0 +1,19 @@
+PROGRAMA
+VARIABLES
+   i,j:NUM;
+   s:SEQ(NUM);
+SUBPROGRAMAS
+INSTRUCCIONES
+   s,i=[3,4,2,7,9,0,11],0;
+   s[i],max=10,s[i];
+   mientras (i<=ultima_posicion(s) || !cierto) hacer
+      si (max<s[i] && i!=10) entonces
+         max=s[i];
+      sino
+         si (max==10) entonces
+            ruptura;
+         fsi
+      fsi
+      i=i+1;
+   fmientras
+   mostrar(max);

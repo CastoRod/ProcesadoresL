@@ -1,0 +1,13 @@
+PROGRAMA
+VARIABLES
+   a,b:LOG;
+   i,j:NUM;
+   s:SEQ(NUM);
+   t:SEQ(LOG);
+SUBPROGRAMAS
+INSTRUCCIONES
+   i=-1*(j - ultima_posicion(t));
+   a=T;
+   s=[i,1];
+   t=[a,F,b];
+   t=[vacia(s)];

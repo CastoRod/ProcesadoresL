@@ -1,120 +1,78 @@
 parser grammar Anasint;
 options{
- tokenVocab=Analex;
+    tokenVocab=Analex;
 }
+
 programa: PROGRAMA variables subprogramas instrucciones EOF;
 
-//VARIABLES
-variables : VARIABLES lista_variables*;
-lista_variables : IDENT COMA lista_variables
-    | IDENT DP tipo PyC
-    ;
+subprogramas : SUBPROGRAMAS;
 
-tipo : SEQ (PA NUM PC|PA LOG PC)*
-    |NUM
-    |LOG
-    ;
+variables: VARIABLES (decl_vars)*;
 
-//SUBPROGRAMAS
-declaracion: variables instrucciones;
+    decl_vars: vars DP tipo PYC;
 
-subprogramas : SUBPROGRAMAS (funciones)* (procedimientos)*;
+        vars: IDENT (COMA vars)*;
 
-funciones:   predicado
-           | FUNCION IDENT(PA tipo IDENT(COMA tipo IDENT)* PC)? DEV (PA tipo IDENT(COMA tipo IDENT)* PC)
-             declaracion
-             FFUNCION
-           | IDENT(PA expresion PC)?
-           | ULTIMAPOSICION(PA secuencia PC);
+        tipo: elemental | no_elemental;
 
-predicado: FUNCION IDENT(PA tipo IDENT(COMA tipo IDENT)* PC)? DEV (PA LOG IDENT) PC
-           declaracion
-           FFUNCION
-           | VACIA(PA secuencia PC)
-           ;
+            elemental: NUM | LOG;
 
-procedimientos: PROCEDIMIENTO IDENT(PA tipo IDENT(COMA tipo IDENT)* PC)
-                declaracion
-                FPROCEDIMIENTO
-                | IDENT(PA expresion PC)?
-                | mostrar
-                ;
+            no_elemental: SEQ_NUM | SEQ_LOG;
 
-//INSTRUCCIONES
-instrucciones: INSTRUCCIONES instruccion*;
-instruccion: ruptura
-           | iteracion
-           | asignacion
-           | condicional
-           | devolucion
-           | llamada_funcion
-           | llamada_procedimiento
-           | mostrar
-           ;
 
-// Instrucciones: asignación
-asignacion : IDENT (COMA IDENT)* IGUAL expresion (COMA expresion)* PyC;
+instrucciones: INSTRUCCIONES (instruccion)*;
 
-expresion : expresion_no_elemental | expresion_entera | expresion_logica ;
+    instruccion: (asignacion | llamada | devuelve | muestra | ruptura) PYC
+               | (condicional | iteracion )
+               ;
 
-funcion_entera: POR
-    | MAS
-    | MENOS
-    ;
+    asignacion: (asig_simple | asig_multiple)+;
 
-expresion_entera : PA expresion_entera PC
-    | expresion_entera (funcion_entera expresion_entera)+
-    | NUMERO
-    | IDENT
-    | llamada_funcion
-    ;
+        asig_simple: IDENT (CA IDENT CC)* ASIG  expr;
 
-expresion_logica : TRUE
-    | FALSE
-    ;
+        expr: PA expr PC                #ParExpr
+            | expr POR expr             #PorExpr
+            | expr (MAS | MENOS) expr   #MasMenosExpr
+            | llamada                   #LlamadaExpr
+            | secuencia                 #SecuenciaExpr
+            | acceso                    #AccesoExpr
+            | valor_logico              #ValorLogicoExpr
+            | IDENT                     #IdentExpr
+            | NUMERO                    #NumExpr
+            ;
 
-expresion_no_elemental : CA secuencia CC
-    | CA CC
-    ;
+            valor_logico: CIERTO | FALSO | T | F;
 
-secuencia: expresion_entera (COMA expresion_entera)*
-    |expresion_logica (COMA expresion_logica)*
-    ;
+            llamada: IDENT PA (terms)? PC;
 
-// Instrucciones: iteracion
-iteracion:  MIENTRAS PA condicion PC HACER
-    | BA iteracion* BC
-    | FMIENTRAS
-    ;
+            secuencia: CA (terms)? CC;
 
-// Instrucciones: condicional
-condicional: SI PA condicion PC ENTONCES
-                instruccion*
-             SINO?
-                instruccion*
-             FINSI
-           ;
-condicion: NEGACION condicion
-         | condicion Y condicion
-         | condicion O condicion
-         | expresion relacion_binaria expresion
-         | CIERTO
-         | FALSO
-         ;
+            devuelve: DEV terms;
 
-relacion_binaria: MAYORIGUAL|MENORIGUAL|MAYOR|MENOR|IGUALDAD|DISTINTO;
+            terms: expr COMA terms | expr;
 
-//Instrucciones: devolución
-devolucion: DEV (IDENT)(COMA IDENT)* PyC
-            | DEV (TRUE|FALSE) PyC;
+            acceso: IDENT CA expr CC;
 
-//Instrucciones: llamadas
-llamada_funcion: funciones;
+        asig_multiple: IDENT (CA IDENT CC)* (COMA IDENT)+ ASIG terms ;
 
-llamada_procedimiento: procedimientos;
 
-//Instrucciones: ruptura
-ruptura: RUPTURA PyC;
 
-//Instrucciones: mostrar
-mostrar: MOSTRAR PA IDENT PC PyC;
+    condicional: SI PA condicion PC ENTONCES bloque (SINO bloque)? FSI;
+
+        bloque: (instruccion)+;
+
+        condicion: NO condicion                    #NOCond
+                 | condicion (Y|O) condicion       #YOCond
+                 | PA condicion PC                 #ParCond
+                 | condicion op_log condicion      #OpCond
+                 | expr                            #ExprCond
+                 ;
+
+        op_log: IGUAL | DISTINTO | MAYOR | MENOR | MAYOR_IGUAL | MENOR_IGUAL | CIERTO;
+
+    iteracion: MIENTRAS PA condicion PC HACER bloque FMIENTRAS;
+
+    muestra: MOSTRAR PA IDENT (COMA IDENT)* PC;
+
+    ruptura: RUPTURA;
+
